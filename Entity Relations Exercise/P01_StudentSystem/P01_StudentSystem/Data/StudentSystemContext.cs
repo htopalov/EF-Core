@@ -37,12 +37,12 @@ namespace P01_StudentSystem.Data
 
             modelBuilder.Entity<Resource>()
                 .Property(x => x.Url)
-                .HasColumnType("varchar")
+                .HasColumnType("varchar(2048)")
                 .IsUnicode(false);
 
             modelBuilder.Entity<Homework>()
                 .Property(x => x.Content)
-                .HasColumnType("varchar")
+                .HasColumnType("varchar(255)")
                 .IsUnicode(false);
 
             modelBuilder.Entity<StudentCourse>()

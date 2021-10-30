@@ -18,13 +18,13 @@ namespace P01_StudentSystem.Data.Models
         [Required]
         public string Name { get; set; }
 
-        [StringLength(10, MinimumLength = 10)]
+        [MaxLength(10)]
         public string PhoneNumber { get; set; }
 
         [Required]
         public DateTime RegisteredOn { get; set; }
 
-        public DateTime Birthday { get; set; }
+        public DateTime? Birthday { get; set; }
 
         public ICollection<StudentCourse> CourseEnrollments { get; set; }
 

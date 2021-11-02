@@ -13,13 +13,13 @@ namespace MusicHub
     {
         public static void Main(string[] args)
         {
-            MusicHubDbContext context = 
+            MusicHubDbContext context =
                 new MusicHubDbContext();
 
             DbInitializer.ResetDatabase(context);
 
             //Console.WriteLine(ExportAlbumsInfo(context,9));
-            Console.WriteLine(ExportSongsAboveDuration(context,4));
+            Console.WriteLine(ExportSongsAboveDuration(context, 4));
         }
 
         public static string ExportAlbumsInfo(MusicHubDbContext context, int producerId)
@@ -33,19 +33,19 @@ namespace MusicHub
                     ProducerName = a.Producer.Name,
                     TotalPrice = a.Price,
                     Songs = a.Songs.Select(s => new
-                        {
-                            Name = s.Name,
-                            Price = s.Price,
-                            Writer = s.Writer.Name
-                        })
+                    {
+                        Name = s.Name,
+                        Price = s.Price,
+                        Writer = s.Writer.Name
+                    })
                         .OrderByDescending(s => s.Name)
                         .ThenBy(s => s.Writer)
                         .ToList()
                 })
-                .OrderByDescending(a=>a.TotalPrice)
+                .OrderByDescending(a => a.TotalPrice)
                 .ToList();
             var sb = new StringBuilder();
-           
+
             foreach (var album in albums)
             {
                 int counter = 1;
@@ -71,37 +71,31 @@ namespace MusicHub
         public static string ExportSongsAboveDuration(MusicHubDbContext context, int duration)
         {
             var songs = context.Songs
-                .Where(s => TimeSpan.Parse(s.Duration.ToString()).TotalSeconds > duration)
                 .Select(s => new
                 {
-                    Name = s.Name,
-                    Performer = s.SongPerformers
-                        .Where(sp => sp.SongId == s.Id)
-                        .Select(p => new
-                        {
-                            FirstName = p.Performer.FirstName,
-                            LastName = p.Performer.LastName
-                        })
-                        .SingleOrDefault(),
-                    Writer = s.Writer.Name,
-                    Producer = s.Album.Producer.Name,
+                    SongName = s.Name,
+                    Performer = s.SongPerformers.Select(p => p.Performer.FirstName + " " + p.Performer.LastName).FirstOrDefault(),
+                    WriterName = s.Writer.Name,
+                    AlbumProducer = s.Album.Producer.Name,
                     Duration = s.Duration
                 })
-                .OrderBy(s=> s.Name)
-                .ThenBy(s=>s.Writer)
-                .ThenBy(s=>s.Performer)
+                .OrderBy(x => x.SongName)
+                .ThenBy(x => x.WriterName)
+                .ThenBy(x => x.Performer)
                 .ToList();
 
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
+
             int counter = 1;
-            foreach (var song in songs)
+
+            foreach (var song in songs.Where(x => x.Duration.TotalSeconds > duration))
             {
                 sb.AppendLine($"-Song #{counter}");
-                sb.AppendLine($"---SongName: {song.Name}");
-                sb.AppendLine($"---Writer: {song.Writer}");
+                sb.AppendLine($"---SongName: {song.SongName}");
+                sb.AppendLine($"---Writer: {song.WriterName}");
                 sb.AppendLine($"---Performer: {song.Performer}");
-                sb.AppendLine($"---AlbumProducer: {song.Producer}");
-                sb.AppendLine($"---Duration: {song.Duration.ToString()}");
+                sb.AppendLine($"---AlbumProducer: {song.AlbumProducer}");
+                sb.AppendLine($"---Duration: {song.Duration}");
                 counter++;
             }
 

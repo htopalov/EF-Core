@@ -18,53 +18,60 @@ namespace MusicHub
 
             DbInitializer.ResetDatabase(context);
 
-            //Console.WriteLine(ExportAlbumsInfo(context,9));
-            Console.WriteLine(ExportSongsAboveDuration(context, 4));
+            Console.WriteLine(ExportAlbumsInfo(context,9));
+            //Console.WriteLine(ExportSongsAboveDuration(context, 4));
         }
 
         public static string ExportAlbumsInfo(MusicHubDbContext context, int producerId)
         {
-            var albums = context.Albums
-                .Where(a => a.ProducerId == producerId)
-                .Select(a => new
-                {
-                    AlbumName = a.Name,
-                    ReleaseDate = a.ReleaseDate.ToString("MM/dd/yyyy", CultureInfo.InvariantCulture),
-                    ProducerName = a.Producer.Name,
-                    TotalPrice = a.Price,
-                    Songs = a.Songs.Select(s => new
-                    {
-                        Name = s.Name,
-                        Price = s.Price,
-                        Writer = s.Writer.Name
-                    })
-                        .OrderByDescending(s => s.Name)
-                        .ThenBy(s => s.Writer)
-                        .ToList()
-                })
-                .OrderByDescending(a => a.TotalPrice)
-                .ToList();
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
-            foreach (var album in albums)
-            {
-                int counter = 1;
-                sb.AppendLine($"-AlbumName: {album.AlbumName}");
-                sb.AppendLine($"-ReleaseDate: {album.ReleaseDate}");
-                sb.AppendLine($"-ProducerName: {album.ProducerName}");
-                sb.AppendLine("-Songs:");
-                foreach (var song in album.Songs)
+            var result = context.Albums
+                .ToArray()
+                .Where(s => s.ProducerId == producerId)
+                .Select(i => new
                 {
-                    sb.AppendLine($"---#{counter}");
-                    sb.AppendLine($"---SongName: {song.Name}");
-                    sb.AppendLine($"---Price: {song.Price:f2}");
-                    sb.AppendLine($"---Writer: {song.Writer}");
-                    counter++;
+                    AlbumName = i.Name,
+                    AlbumPrice = i.Price,
+                    AlbumRelease = i.ReleaseDate.ToString("MM/dd/yyyy", CultureInfo.InvariantCulture),
+                    ProducerName = i.Producer.Name,
+                    SongsColection = i.Songs
+                        .ToArray()
+                        .OrderByDescending(s => s.Name)
+                        .ThenBy(w => w.Writer.Name)
+                        .Select(s => new
+                            {
+                                SongName = s.Name,
+                                SongWriter = s.Writer.Name,
+                                SongPrice = s.Price
+                            }
+                        )
+                        .ToArray()
+                })
+                .OrderByDescending(o => o.AlbumPrice)
+                .ToArray();
+
+
+            foreach (var album in result)
+            {
+                sb.AppendLine($"-AlbumName: {album.AlbumName}");
+                sb.AppendLine($"-ReleaseDate: {album.AlbumRelease}");
+                sb.AppendLine($"-ProducerName: {album.ProducerName}");
+                sb.AppendLine($"-Songs:");
+
+                int i = 1;
+
+                foreach (var song in album.SongsColection)
+                {
+                    sb.AppendLine($"---#{i++}");
+                    sb.AppendLine($"---SongName: {song.SongName}");
+                    sb.AppendLine($"---Price: {song.SongPrice:f2}");
+                    sb.AppendLine($"---Writer: {song.SongWriter}");
                 }
 
-                sb.AppendLine($"-AlbumPrice: {album.TotalPrice:f2}");
-            }
+                sb.AppendLine($"-AlbumPrice: {album.AlbumPrice:f2}");
 
+            }
             return sb.ToString().TrimEnd();
         }
 

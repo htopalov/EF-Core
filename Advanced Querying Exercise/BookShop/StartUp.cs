@@ -6,6 +6,7 @@ namespace BookShop
 {
     using Data;
     using Initializer;
+    using Microsoft.EntityFrameworkCore;
     using System.Globalization;
 
     public class StartUp
@@ -34,6 +35,10 @@ namespace BookShop
             //int length = int.Parse(Console.ReadLine());
             //Console.WriteLine(CountBooks(db, length));
             //Console.WriteLine(CountCopiesByAuthor(db));
+            //Console.WriteLine(GetTotalProfitByCategory(db));
+            //Console.WriteLine(GetMostRecentBooks(db));
+            //IncreasePrices(db);
+            Console.WriteLine(RemoveBooks(db));
         }
 
 
@@ -266,6 +271,87 @@ namespace BookShop
 
             return sb.ToString().TrimEnd();
                 
+        }
+
+        public static string GetTotalProfitByCategory(BookShopContext context)
+        {
+            var categories = context.Categories
+                .Select(c=> new
+                {
+                    CategoryName = c.Name,
+                    Profit = c.CategoryBooks
+                    .Select(x=> x.Book.Copies * x.Book.Price)
+                    .Sum()
+                })
+                .OrderByDescending(c => c.Profit)
+                .ThenBy(c => c.CategoryName)
+                .ToList();
+
+            var sb = new StringBuilder();
+            foreach (var category in categories)
+            {
+                sb.AppendLine($"{category.CategoryName} ${category.Profit:f2}");
+            }
+
+            return sb.ToString().TrimEnd();
+        }
+
+        public static string GetMostRecentBooks(BookShopContext context)
+        {
+            var list = context.Categories
+                .Select(x => new
+                {
+                    CategoryName = x.Name,
+                    Books = x.CategoryBooks
+                    .Select(y => new
+                    {
+                        y.Book.Title,
+                        y.Book.ReleaseDate
+                    })
+                    .OrderByDescending(b => b.ReleaseDate)
+                    .Take(3)
+                    .ToList()
+                })
+                .OrderBy(c => c.CategoryName)
+                .ToList();
+            var sb = new StringBuilder();
+            foreach (var category in list)
+            {
+                sb.AppendLine($"--{category.CategoryName}");
+                foreach (var book in category.Books)
+                {
+                    sb.AppendLine($"{book.Title} ({book.ReleaseDate.Value.Year})");
+                }
+            }
+
+            return sb.ToString().TrimEnd();
+        }
+
+        public static void IncreasePrices(BookShopContext context)
+        {
+            var books = context.Books
+              .Where(b => b.ReleaseDate.Value.Year < 2010)
+              .ToList();
+
+            foreach (var book in books)
+            {
+                book.Price += 5;
+            }
+
+            context.SaveChanges();
+        }
+
+        public static int RemoveBooks(BookShopContext context)
+        {
+            var books = context.Books
+                .Where(b => b.Copies < 4200)
+                .ToList();
+
+            context.Books.RemoveRange(books);
+
+            context.SaveChanges();
+
+            return books.Count;
         }
     }
 }
